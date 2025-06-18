@@ -1,10 +1,10 @@
-from fastapi import FastAPI, File, UploadFile
+from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
-import essentia
-import essentia.standard as es
+import analyze  # asegúrate de tener analyze.py
 
 app = FastAPI()
 
+# Permitir conexión desde el frontend
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -14,24 +14,6 @@ app.add_middleware(
 
 @app.post("/analyze")
 async def analyze_audio(file: UploadFile = File(...)):
-    try:
-        contents = await file.read()
-        with open("temp.wav", "wb") as f:
-            f.write(contents)
-
-        loader = es.MonoLoader(filename="temp.wav")
-        audio = loader()
-
-        bpm = es.RhythmExtractor2013(method="multifeature")(audio)[0]
-        key, scale, strength = es.KeyExtractor()(audio)
-
-        return {
-            "bpm": round(bpm),
-            "key": key,
-            "scale": scale,
-            "genre": "Desconocido",
-            "mood": "Indefinido"
-        }
-
-    except Exception as e:
-        return {"error": str(e)}
+    contents = await file.read()
+    result = analyze.process_audio(contents)
+    return result
